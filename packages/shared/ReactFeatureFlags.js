@@ -60,7 +60,12 @@ export const enableDeferRootSchedulingToMicrotask = true;
 // Also allows hydration callbacks to fire when a dehydrated boundary gets
 // hydrated or deleted.
 //
-// This will eventually be replaced by the Transition Tracing proposal.
+// enableSuspenseCallback用于启用或禁用React的新特性——suspense callback。
+/* 
+默认情况下，enableSuspenseCallback常量的值为false，即suspense callback特性被禁用。如果需要启用suspense callback特性，可以在应用程序的根组件中将enableSuspenseCallback常量的值设置为true。
+启用suspense callback后，开发者可以使用新的React API来处理异步数据的加载，
+例如React.useDeferredValue和React.useTransition。这些API可以帮助开发者更好地控制数据加载过程中的UI展示，并提供更好的用户体验。
+*/
 export const enableSuspenseCallback = false;
 
 // Experimental Scope support.
@@ -94,7 +99,11 @@ export const enableBinaryFlight = __EXPERIMENTAL__;
 export const enableTaint = __EXPERIMENTAL__;
 
 export const enablePostpone = __EXPERIMENTAL__;
+/* 
+enableTransitionTracing 是React中的一个开发者工具标志，它用于启用或禁用React的过渡追踪（Transition Tracing）特性。Transition Tracing 是React的一个性能工具，用于帮助开发者追踪组件渲染的过程，了解组件的挂载、更新和卸载等阶段所花费的时间。
 
+在React的开发模式下，你可以通过设置 enableTransitionTracing 为 true 来启用过渡追踪。当它被启用时，React会在组件的挂载、更新和卸载等阶段记录时间戳，开发者可以通过React DevTools等工具查看这些时间戳，从而了解各个阶段的性能情况。
+*/
 export const enableTransitionTracing = false;
 
 // No known bugs, but needs performance testing

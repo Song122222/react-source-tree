@@ -89,6 +89,24 @@ function FiberRootNode(
     this.pooledCache = null;//内部缓存
     this.pooledCacheLanes = NoLanes;
   }
+// 是否启用react18的的新特性  给新new的对象挂载hydrationCallbacks属性
+/* 
+关于hydrationCallbacks
+
+在React中，Hydration是指将由服务端渲染生成的HTML标记与客户端生成的JavaScript代码进行混合，以保持页面的一致性，并添加事件处理逻辑等。
+Hydration过程中，React会在每个Fiber节点上保存并执行相应的hydrationCallbacks函数。
+
+在服务端渲染（Server-side Rendering，SSR）中，React将组件的初始渲染结果以HTML字符串的形式发送到客户端。
+然后在客户端进行混合渲染时，React会使用这些初始渲染结果作为基础，并在其上重新构建组件树和事件处理逻辑。在这个过程中，React会在每个Fiber节点上存储hydrationCallbacks属性。
+
+
+hydrationCallbacks是一个对象，包含了在混合渲染过程中需要执行的回调函数。
+这些回调函数包括onHydrated    -------在组件被完全混合渲染并挂载到DOM树上后调用。
+onDeleted                   -------在组件被卸载并从DOM树中移除后调用。
+onHydratedComponentUpdate   ----------在混合渲染后，组件的props或state发生变化时调用。
+通过使用hydrationCallbacks，开发者可以在混合渲染过程中执行特定的操作，例如初始化第三方库、绑定事件处理器等。这样可以确保在React重新构建组件树时，一些外部依赖关系的正确初始化和绑定。
+
+*/
 
   if (enableSuspenseCallback) {
     this.hydrationCallbacks = null;
@@ -129,7 +147,7 @@ function FiberRootNode(
     }
   }
 }
-// 创建根节点内部操作函数
+// 创建根节点内部操作函数   这个函数存在的作用是对创建的节点进行一些操作
 export function createFiberRoot(
   containerInfo: Container,
   tag: RootTag,
@@ -154,7 +172,7 @@ export function createFiberRoot(
     onRecoverableError,
     formState,
   ));//生成实力化对象
-  if (enableSuspenseCallback) {
+  if (enableSuspenseCallback) { //是否为服务端渲染
     root.hydrationCallbacks = hydrationCallbacks;
   }
 
@@ -173,11 +191,11 @@ export function createFiberRoot(
   uninitializedFiber.stateNode = root;
 
   if (enableCache) {
-    const initialCache = createCache();
-    retainCache(initialCache);
+    const initialCache = createCache();//创建对象池
+    retainCache(initialCache);//初始化
 
     // pooledCache 是一个临时使用的新缓存实例用于在渲染期间新安装的边界 在一般情况下 pooledCache总是在渲染结束时从根目录中清除 它要么在渲染提交时被释放，要么在渲染挂起时被移到屏幕外的组件。
-    // 因为池缓存的生命周期与主记忆状态是不同的缓存，它必须单独保留。
+    // 因为池缓存的生命周期与主记忆状态是不同的缓存，它必须单独保留。   ---* 缓存
     root.pooledCache = initialCache;
     retainCache(initialCache);
     const initialState: RootState = {

@@ -29,7 +29,7 @@ import {
   findCurrentHostFiber,
   findCurrentHostFiberWithNoPortals,
 } from './ReactFiberTreeReflection';
-import {get as getInstance} from 'shared/ReactInstanceMap';
+import {get as getInstance} from '../../shared/ReactInstanceMap';
 import {
   HostComponent,
   HostSingleton,
@@ -135,7 +135,7 @@ if (__DEV__) {
   didWarnAboutNestedUpdates = false;
   didWarnAboutFindNodeInStrictMode = ({}: {[string]: boolean});
 }
-
+// 获取当前上下文绑定关系   
 function getContextForSubtree(
   parentComponent: ?React$Component<any, any>,
 ): Object {
@@ -255,8 +255,8 @@ export function createContainer(
   // 默认为非服务器端渲染
   const hydrate = false;
   const initialChildren = null;
-  // 创建根节点函数
-  return createFiberRoot(
+  // createFiberRoot会返回根节点并对根节点进行一些操作
+  const root =createFiberRoot(
     containerInfo,
     tag,
     hydrate,
@@ -269,8 +269,9 @@ export function createContainer(
     transitionCallbacks,
     null,
   );
+  return root
 }
-
+// 创建服务端渲染的容器 container
 export function createHydrationContainer(
   initialChildren: ReactNodeList,
   // TODO: Remove `callback` when we delete legacy mode.
@@ -284,7 +285,7 @@ export function createHydrationContainer(
   onRecoverableError: (error: mixed) => void,
   transitionCallbacks: null | TransitionTracingCallbacks,
   formState: ReactFormState<any, any> | null,
-): OpaqueRoot {
+) {
   const hydrate = true;
   const root = createFiberRoot(
     containerInfo,
@@ -300,7 +301,7 @@ export function createHydrationContainer(
     formState,
   );
 
-  // TODO: Move this to FiberRoot constructor
+  // TODO: 移动到FiberRoot构造器
   root.context = getContextForSubtree(null);
 
   // Schedule the initial render. In a hydration root, this is different from
@@ -319,6 +320,19 @@ export function createHydrationContainer(
 
   return root;
 }
+/* 
+---* 疑问   为什么服务端渲染会调用getContextForSubtree函数来获取上下文，但是原本不需要呢？
+
+服务器端渲染（Server-side Rendering，SSR）调用 getContextForSubtree 函数的主要用途是为了在渲染过程中获取上下文的值，并将这些值传递给相应的组件。
+
+在服务器端渲染中，React首先会执行组件的初始渲染，并生成包含了初始渲染结果的HTML字符串。然后，在客户端进行混合渲染（Hydration）时，React会使用这些初始渲染结果作为基础，并在其上重新构建组件树和事件处理逻辑。
+
+在这个过程中，getContextForSubtree函数被用来获取在初始渲染阶段设置的上下文的值。它会通过遍历父组件的Fiber节点，找到具有匹配上下文类型的节点，并返回该上下文的值。然后，React会将这些上下文的值传递给相应的组件，以确保在混合渲染时能够正确地恢复上下文的状态。
+
+
+
+
+*/
 
 export function updateContainer(
   element: ReactNodeList,

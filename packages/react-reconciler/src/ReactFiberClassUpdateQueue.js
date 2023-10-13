@@ -170,7 +170,18 @@ if (__DEV__) {
     currentlyProcessingQueue = null;
   };
 }
+/* 
+在React的内部实现中，initializeUpdateQueue 函数用于初始化组件的更新队列。
+React使用Fiber架构来管理组件的更新和渲染，而更新队列是其中的一个重要概念。当组件的状态发生变化时，React会将更新信息存储在该组件的更新队列中，以便在适当的时机进行更新和重新渲染。
 
+具体来说，initializeUpdateQueue 函数的作用包括：
+
+初始化更新队列： 当一个组件被创建时，React需要为它初始化一个更新队列。initializeUpdateQueue 函数负责创建并初始化一个空的更新队列，以便存储组件的更新信息。
+
+为Fiber节点分配更新队列： 在React的Fiber架构中，每个Fiber节点都有一个更新队列。当一个组件对应的Fiber节点被创建时，需要调用 initializeUpdateQueue 函数为该Fiber节点分配一个更新队列。
+
+更新队列的结构设置： initializeUpdateQueue 函数可能会设置更新队列的一些结构，以便React内部的更新机制能够正确地使用它。这些结构可能包括指向下一个更新的指针、标识是否有批量更新等信息。
+*/
 export function initializeUpdateQueue<State>(fiber: Fiber): void {
   const queue: UpdateQueue<State> = {
     baseState: fiber.memoizedState,
