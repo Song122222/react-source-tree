@@ -3298,7 +3298,7 @@ export const doctypeChunk: PrecomputedChunk =
   stringToPrecomputedChunk('<!DOCTYPE html>');
 
 import {doctypeChunk as DOCTYPE} from 'react-server/src/ReactFizzConfig';
-
+// 服务器端字符串反编译组件   --*  重点
 export function pushStartInstance(
   target: Array<Chunk | PrecomputedChunk>,
   type: string,
@@ -3307,7 +3307,7 @@ export function pushStartInstance(
   renderState: RenderState,
   formatContext: FormatContext,
   textEmbedded: boolean,
-): ReactNodeList {
+) {
   if (__DEV__) {
     validateARIAProperties(type, props);
     validateInputProperties(type, props);

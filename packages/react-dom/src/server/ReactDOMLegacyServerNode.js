@@ -18,7 +18,7 @@ import {
 type ServerOptions = {
   identifierPrefix?: string,
 };
-
+// jsx语法转换成js语言的编译阶段    
 function renderToString(
   children: ReactNodeList,
   options?: ServerOptions,
@@ -27,7 +27,7 @@ function renderToString(
     children,
     options,
     false,
-    'The server used "renderToString" which does not support Suspense. If you intended for this Suspense boundary to render the fallback content on the server consider throwing an Error somewhere within the Suspense boundary. If you intended to have the server wait for the suspended component please switch to "renderToPipeableStream" which supports Suspense on the server',
+    '服务器使用“renderToString”，它不支持Suspense。如果您打算让这个Suspense边界在服务器上呈现回退内容，请考虑在Suspense边界内的某个地方抛出一个错误。如果你想让服务器等待挂起的组件，请切换到“ renderToPipeableStream ”，它在服务器上支持挂起',
   );
 }
 

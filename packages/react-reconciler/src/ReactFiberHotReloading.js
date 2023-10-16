@@ -258,7 +258,7 @@ export const scheduleRoot: ScheduleRoot = (
 ): void => {
   if (__DEV__) {
     if (root.context !== emptyContextObject) {
-      // Super edge case: root has a legacy _renderSubtree context
+      // Super edge case: root has 有一个遗留的 _renderSubtree 上下文
       // but we don't know the parentComponent so we can't pass it.
       // Just ignore. We'll delete this with _renderSubtree code path later.
       return;

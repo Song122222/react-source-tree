@@ -1138,7 +1138,7 @@ function renderBackupSuspenseBoundary(
 
   popComponentStackInDEV(task);
 }
-
+// 服务器端渲染元素方法 --函数
 function renderHostElement(
   request: Request,
   task: Task,
@@ -1739,7 +1739,7 @@ function renderOffscreen(
     task.keyPath = prevKeyPath;
   }
 }
-
+// 服务器端渲染函数    --*  重点
 function renderElement(
   request: Request,
   task: Task,
@@ -1749,6 +1749,7 @@ function renderElement(
   props: Object,
   ref: any,
 ): void {
+  // 根据传入类型对组件进行渲染
   if (typeof type === 'function') {
     if (shouldConstruct(type)) {
       renderClassComponent(request, task, keyPath, type, props);

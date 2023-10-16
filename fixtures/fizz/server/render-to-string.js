@@ -7,7 +7,7 @@
  */
 
 import * as React from 'react';
-import {renderToString} from 'react-dom/server';
+import {renderToString} from '../../../packages/react-dom/server';
 import App from '../src/App';
 import {API_DELAY, ABORT_DELAY} from './delays';
 import {performance} from 'perf_hooks';
@@ -19,7 +19,11 @@ let assets = {
 };
 
 let textEncoder = new TextEncoder();
+// 服务器端渲染原则   使用renderTostring的方式在服务端进行渲染，<同构渲染> 
+/* 
 
+
+*/
 module.exports = function render(url, res) {
   let payload =
     '<!DOCTYPE html>' +

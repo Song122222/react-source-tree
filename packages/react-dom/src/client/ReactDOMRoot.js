@@ -285,6 +285,7 @@ ReactDOMHydrationRoot.prototype.unstable_scheduleHydration = scheduleHydration;
 
 /*
 如果container是document则rootElement是html，否则是他的第一个子节点。看到这里就需要注意我们为什么不推荐使用document来作为container了，因为他会直接把html覆盖。
+hydrateRoot并不会创建Html。因为是服务器端渲染，所以他会进行关联
 */
 export function hydrateRoot(
   container,//dom元素容器 

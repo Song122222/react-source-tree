@@ -16,7 +16,7 @@ import {
   startWork,
   startFlowing,
   abort,
-} from 'react-server/src/ReactFizzServer';
+} from '../../../react-server/src/ReactFizzServer';
 
 import {
   createResumableState,
@@ -31,7 +31,7 @@ type ServerOptions = {
 function onError() {
   // Non-fatal errors are ignored.
 }
-
+// 服务器端私有函数  dom转换字符串的私有函数   /.私有函数
 function renderToStringImpl(
   children: ReactNodeList,
   options: void | ServerOptions,
@@ -91,9 +91,7 @@ function renderToStringImpl(
     // really make sense here. But this is the legacy server renderer, anyway.
     // We're going to delete it soon.
     throw new Error(
-      'A component suspended while responding to synchronous input. This ' +
-        'will cause the UI to be replaced with a loading indicator. To fix, ' +
-        'updates that suspend should be wrapped with startTransition.',
+      '在响应同步输入时挂起的组件。这将导致UI被一个加载指示器取代。要修复挂起的更新，应该用startTransition包装'
     );
   }
 

@@ -1,12 +1,3 @@
-/**
- * Copyright (c) Meta Platforms, Inc. and affiliates.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- *
- * @emails react-core
- */
-
 'use strict';
 
 const ReactDOMServerIntegrationUtils = require('./utils/ReactDOMServerIntegrationTestUtils');
@@ -26,7 +17,7 @@ function initModules() {
   React = require('react');
   ReactDOM = require('react-dom');
   ReactDOMClient = require('react-dom/client');
-  ReactDOMServer = require('react-dom/server');
+  ReactDOMServer = require('../../../react-dom/server');
   ReactTestUtils = require('react-dom/test-utils');
   act = require('internal-test-utils').act;
   if (gate(flags => flags.enableSuspenseList)) {

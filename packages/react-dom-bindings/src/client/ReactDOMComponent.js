@@ -1008,7 +1008,7 @@ export function setInitialProperties(
   }
 
   // TODO: Make sure that we check isMounted before firing any of these events.
-
+// react标签渲染   ---* 重点   标签转换
   switch (tag) {
     case 'div':
     case 'span':

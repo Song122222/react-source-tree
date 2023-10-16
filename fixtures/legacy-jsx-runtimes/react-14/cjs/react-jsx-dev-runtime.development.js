@@ -408,7 +408,7 @@ function defineRefPropWarningGetter(props, displayName) {
  * @internal
  */
 
-
+// render函数的执行结果  ReactElement
 var ReactElement = function (type, key, ref, self, source, owner, props) {
   var element = {
     // This tag allows us to uniquely identify this as a React Element

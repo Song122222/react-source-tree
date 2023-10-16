@@ -282,12 +282,9 @@ type ChildReconciler = (
   lanes: Lanes,
 ) => Fiber | null;
 
-// This wrapper function exists because I expect to clone the code in each path
-// to be able to optimize each path individually by branching early. This needs
-// a compiler or we can do it manually. Helpers that don't need this branching
-// live outside of this function.
+// 把当前fiber节点中的element结构转为fiber节点
 function createChildReconciler(
-  shouldTrackSideEffects: boolean,
+  shouldTrackSideEffects: boolean,//是否需要收集副作用
 ): ChildReconciler {
   function deleteChild(returnFiber: Fiber, childToDelete: Fiber): void {
     if (!shouldTrackSideEffects) {
@@ -342,7 +339,7 @@ function createChildReconciler(
     }
     return existingChildren;
   }
-
+// useFiber是将当前可以复用的节点和属性传入，然后复制合并到workInProgress上   /. 合并复用fiber方法
   function useFiber(fiber: Fiber, pendingProps: mixed): Fiber {
     // We currently set sibling to null and index to 0 here because it is easy
     // to forget to do before returning it. E.g. for the single child case.
@@ -1234,25 +1231,37 @@ function createChildReconciler(
     created.return = returnFiber;
     return created;
   }
-
+// 对比单个组件节点函数    /? 关于节点标签名更换的问题? 
+//                       在 React 组件的状态变更时，尽量不要修改元素的标签类型，否则当前元素对应的 fiber 节点及所有的子节点都会被丢弃，然后重新创建。
+/* 
+在对比过程中，采用了循环的方式，同一fiber节点下，所有同一级别的子fiber节点是横向单向链表，串联起来的。
+而且，虽然新节点是单个节点，但却无法保证之前的节点也是单个节点，因此这里从第 1 个子 fiber 节点开始，查找第一个 key 和节点类型都一样的节点。
+若找到，进行复用；若找不到，则删除之前所有的子节点，创建新的 fiber 节点。
+*/
   function reconcileSingleElement(
     returnFiber: Fiber,
     currentFirstChild: Fiber | null,
     element: ReactElement,
     lanes: Lanes,
   ): Fiber {
+     // element是workInProgress中的，表示正在构建中的
     const key = element.key;
+     // child: 当前正在对比的child，初始时是第1个子节点
     let child = currentFirstChild;
+     // 新节点是单个节点，但无法保证之前的节点也是单个节点，
+  // 这里用循环查找第一个 key和节点类型都一样的节点，进行复用
     while (child !== null) {
-      // TODO: If key === null and child.key === null, then this only applies to
-      // the first item in the list.
+      // 比较 key 值是否有变化，这是复用 Fiber 节点的先决条件
+    // 若找到 key 一样的节点，即使 key 都为 null，那也是节点一样
+    // 注意 key 为 null 我们也认为是相等，因为单个节点没有 key 也是正常的
       if (child.key === key) {
         const elementType = element.type;
         if (elementType === REACT_FRAGMENT_TYPE) {
+          // 复用之前的节点   因为Fragment和其他原生包括组件都是不同的，所以这里需要单独进行处理 并且Fragment没有ref属性
           if (child.tag === Fragment) {
-            deleteRemainingChildren(returnFiber, child.sibling);
+            deleteRemainingChildren(returnFiber, child.sibling); // 已找到可复用的fiber节点，从下一个节点开始全部删除
             const existing = useFiber(child, element.props.children);
-            existing.return = returnFiber;
+            existing.return = returnFiber; // 重置新Fiber节点的return指针，指向当前Fiber节点
             if (__DEV__) {
               existing._debugSource = element._source;
               existing._debugOwner = element._owner;
@@ -1260,25 +1269,24 @@ function createChildReconciler(
             return existing;
           }
         } else {
+          // 除Fragment外的其他类型
           if (
             child.elementType === elementType ||
             // Keep this check inline so it only runs on the false path:
             (__DEV__
               ? isCompatibleFamilyForHotReloading(child, element)
               : false) ||
-            // Lazy types should reconcile their resolved type.
-            // We need to do this after the Hot Reloading check above,
-            // because hot reloading has different semantics than prod because
-            // it doesn't resuspend. So we can't let the call below suspend.
+            // Lazy 类型应该与它们解析的类型保持一致。我们需要在上面的Hot Reloading检查之后这样做， 因为hot reloading和prod有不同的语义 所以我们不能让下面的调用暂停。
             (typeof elementType === 'object' &&
               elementType !== null &&
               elementType.$$typeof === REACT_LAZY_TYPE &&
               resolveLazy(elementType) === child.type)
           ) {
-            deleteRemainingChildren(returnFiber, child.sibling);
-            const existing = useFiber(child, element.props);
-            existing.ref = coerceRef(returnFiber, child, element);
-            existing.return = returnFiber;
+
+            deleteRemainingChildren(returnFiber, child.sibling);// 已找到可复用的fiber节点，从下一个节点开始全部删除
+            const existing = useFiber(child, element.props);// 复用child节点和element.props属性
+            existing.ref = coerceRef(returnFiber, child, element);//处理ref
+            existing.return = returnFiber;//指针重新指向当前fiber节点
             if (__DEV__) {
               existing._debugSource = element._source;
               existing._debugOwner = element._owner;
@@ -1286,27 +1294,35 @@ function createChildReconciler(
             return existing;
           }
         }
-        // Didn't match.
+          // 若key一样，但节点类型没有匹配上，无法直接复用，则直接删除该节点和其兄弟节点，停止循环，
+          // 开始走while后面的创建新fiber节点的逻辑
         deleteRemainingChildren(returnFiber, child);
         break;
       } else {
+         // 若key不一样，不能复用，标记删除当前单个child节点
         deleteChild(returnFiber, child);
       }
-      child = child.sibling;
+      child = child.sibling;// 指针指向下一个sibling兄弟节点，检测是否可以复用
     }
-
+ // 如果上main的循环没找到可以复用的节点，则接下来直接创建一个新的fiber节点
     if (element.type === REACT_FRAGMENT_TYPE) {
+    // 若新节点的类型是 REACT_FRAGMENT_TYPE，则调用 createFiberFromFragment() 方法创建fiber节点
+    // createFiberFromFragment() 也是调用的createFiber()，第1个参数指定fragment类型
+    // 然后再调用 new FiberNode() 创建一个fiber节点实例
       const created = createFiberFromFragment(
         element.props.children,
         returnFiber.mode,
         lanes,
         element.key,
       );
-      created.return = returnFiber;
+      created.return = returnFiber;// 新节点的return指向到父级节点    --* fiber替换节点的过程
       return created;
     } else {
+    // 若新节点是其他类型，如普通的html元素、函数组件、类组件等，则会调用 createFiberFromElement()
+    // 这里面再接着调用 createFiberFromTypeAndProps()，然后判断element的type是哪种类型
+    // 然后再调用对应的create方法创建fiber节点
       const created = createFiberFromElement(element, returnFiber.mode, lanes);
-      created.ref = coerceRef(returnFiber, currentFirstChild, element);
+      created.ref = coerceRef(returnFiber, currentFirstChild, element);//处理ref
       created.return = returnFiber;
       return created;
     }
@@ -1348,39 +1364,40 @@ function createChildReconciler(
     return created;
   }
 
-  // This API will tag the children with the side-effect of the reconciliation
-  // itself. They will be added to the side-effect list as we pass through the
-  // children and the parent.
+//私有化函数    根据 element 的类型，调用不同的方法来处理，相当于一个路由分发。  /. 就是一个转换的过程
+// 并不是一个递归函数  只是处理当前层级的节点数据    这个函数存在的目的就是为了复用节点   --*
   function reconcileChildFibersImpl(
-    returnFiber: Fiber,
-    currentFirstChild: Fiber | null,
-    newChild: any,
-    lanes: Lanes,
-  ): Fiber | null {
-    // This function is not recursive.
-    // If the top level item is an array, we treat it as a set of children,
-    // not as a fragment. Nested arrays on the other hand will be treated as
-    // fragment nodes. Recursion happens at the normal flow.
-
-    // Handle top level unkeyed fragments as if they were arrays.
-    // This leads to an ambiguity between <>{[...]}</> and <>...</>.
-    // We treat the ambiguous cases above the same.
-    // TODO: Let's use recursion like we do for Usable nodes?
+    returnFiber,
+    currentFirstChild,
+    newChild,
+    lanes,
+  ) {
+  // // 是否是顶层的没有key的fragment组件
     const isUnkeyedTopLevelFragment =
       typeof newChild === 'object' &&
       newChild !== null &&
       newChild.type === REACT_FRAGMENT_TYPE &&
       newChild.key === null;
+      //  // 若是顶层的fragment组件，则直接使用其children
     if (isUnkeyedTopLevelFragment) {
       newChild = newChild.props.children;
     }
 
-    // Handle object types
+    // 判断该节点的类型
     if (typeof newChild === 'object' && newChild !== null) {
+         /**
+     * newChild是Object，再具体判断 newChild 的具体类型。
+     * 1. 是普通React的函数组件、类组件、html标签等
+     * 2. portal类型；
+     * 3. lazy类型；
+     * 4. newChild 是一个数组，即 workInProgress 节点下有并排多个结构，这时 newChild 就是一个数组
+     * 5. 其他迭代类型，我暂时也不确定这哪种？
+     */
       switch (newChild.$$typeof) {
-        case REACT_ELEMENT_TYPE:
+        case REACT_ELEMENT_TYPE://React组件
+        //  // 调度单体element结构的元素
           return placeSingleChild(
-            reconcileSingleElement(
+            reconcileSingleElement(//对比单个React组件  
               returnFiber,
               currentFirstChild,
               newChild,
@@ -1472,6 +1489,7 @@ function createChildReconciler(
       (typeof newChild === 'string' && newChild !== '') ||
       typeof newChild === 'number'
     ) {
+         // 文本节点
       return placeSingleChild(
         reconcileSingleTextNode(
           returnFiber,
@@ -1488,18 +1506,22 @@ function createChildReconciler(
       }
     }
 
-    // Remaining cases are all treated as empty.
+  // 若没有匹配到任何类型，说明当前newChild无法转为fiber节点，如boolean类型，null等是无法转为fiber节点的
+  // deleteRemainingChildren()的作用是删除 returnFiber 节点下，第2个参数传入的fiber节点，及后续所有的兄弟节点
+  // 如 a->b->c->d-e，假如我们第2个参数传入的是c，则删除c及后续的d、e等兄弟节点，
+  // 而这里，第2个参数传入的是 currentFirstChild，则意味着删除returnFiber节点下所有的子节点
+  // 为什么要删除呢？这是因为，为了保证前后两棵树是一致的，若jsx在workInProgress所在树中，无法转为fiber节点，
+  // 说明 returnFiber 下所有的fiber节点均无法复用
+
     return deleteRemainingChildren(returnFiber, currentFirstChild);
   }
-
+// --* 返回的函数体     全局搜索  --* 重点  关于fiber入口   --* 重点  引用函数
   function reconcileChildFibers(
-    returnFiber: Fiber,
-    currentFirstChild: Fiber | null,
-    newChild: any,
-    lanes: Lanes,
-  ): Fiber | null {
-    // This indirection only exists so we can reset `thenableState` at the end.
-    // It should get inlined by Closure.
+    returnFiber,// 当前 Fiber 节点，即 workInProgress
+    currentFirstChild,// current 树上对应的当前 Fiber 节点的第一个子 Fiber 节点，mount 时为 null，主要是为了是否能复用之前的节点
+    newChild,// returnFiber中的element结构，用来构建returnFiber的子节点
+    lanes,// 优先级相关
+  ) {
     thenableIndexCounter = 0;
     const firstChildFiber = reconcileChildFibersImpl(
       returnFiber,
@@ -1517,7 +1539,7 @@ function createChildReconciler(
 }
 
 export const reconcileChildFibers: ChildReconciler =
-  createChildReconciler(true);
+  createChildReconciler(true);//布尔值参数  是否需要收集副作用
 export const mountChildFibers: ChildReconciler = createChildReconciler(false);
 
 export function resetChildReconcilerOnUnwind(): void {

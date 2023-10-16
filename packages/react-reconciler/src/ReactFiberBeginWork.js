@@ -322,33 +322,43 @@ if (__DEV__) {
   didWarnAboutTailOptions = ({}: {[string]: boolean});
   didWarnAboutDefaultPropsOnFunctionComponent = ({}: {[string]: boolean});
 }
+/* 
 
+React 中维护着两棵 fiber 树，一棵是正在展示的 UI 对应的那棵树，我们称为 current 树；另一棵通过更新，将要构建的树。
+那么在更新的过程中，是通过怎么样的对比过程，来决定是复用之前的节点，还是创建新的节点。
+*/
+// --* 重点  关于fiber入口   --* 重点
 export function reconcileChildren(
-  current: Fiber | null,
-  workInProgress: Fiber,
-  nextChildren: any,
-  renderLanes: Lanes,
+  current: Fiber | null,//current 当前树中的fiber节点，可能为空
+  workInProgress: Fiber,//workInProgress 将要构建树的fiber节点
+  nextChildren: any,//nextChildren 将要构建为fiber节点的element结构
+  renderLanes: Lanes,//renderLanes 当前的渲染优先级
 ) {
-  if (current === null) {
-    // If this is a fresh new component that hasn't been rendered yet, we
-    // won't update its child set by applying minimal side-effects. Instead,
-    // we will add them all to the child before it gets rendered. That means
-    // we can optimize this reconciliation pass by not tracking side-effects.
+  // 这里会根据 current 的 fiber 节点的状态，分化为 mountChildFibers() 和 reconcileChildFibers()。
+  if (current === null) {   
+    /**
+     * mount阶段，这是一个还未渲染的全新组件，我们不用通过对比最小副作用来更新它的子节点。
+     * 直接转换nextChildren即可，不用标记哪些节点需要删除等等
+     */
     workInProgress.child = mountChildFibers(
       workInProgress,
       null,
       nextChildren,
       renderLanes,
-    );
+    );//初始化
   } else {
-    // If the current child is the same as the work in progress, it means that
-    // we haven't yet started any work on these children. Therefore, we use
-    // the clone algorithm to create a copy of all the current children.
-
-    // If we had any progressed work already, that is invalid at this point so
-    // let's throw it out.
+// 若current不为空，说明要得到一棵新的fiber树，执行 reconcileChildFibers() 方法
+/*
+     * 若current不为null，则需要进行的工作：
+     * 1. 判断之前的fiber节点是否可以复用；
+     * 2. 若不能复用，则需要标记删除等；
+*/
     workInProgress.child = reconcileChildFibers(
       workInProgress,
+       /**
+       * 因为我们要构建的是workInProgress的子节点，这里也传入current的子节点，
+       * 方便后续的对比和复用
+       */
       current.child,
       nextChildren,
       renderLanes,

@@ -1999,6 +1999,7 @@ function renderRootSync(root: FiberRoot, lanes: Lanes) {
 
 // The work loop is an extremely hot path. Tell Closure not to inline it.
 /** @noinline */
+//  --* 重点   dom转换成fiber的过程
 function workLoopSync() {
   // Perform work without checking if we need to yield between fiber.
   while (workInProgress !== null) {
@@ -2279,6 +2280,7 @@ function performUnitOfWork(unitOfWork: Fiber): void {
     next = beginWork(current, unitOfWork, renderLanes);
     stopProfilerTimerIfRunningAndRecordDelta(unitOfWork, true);
   } else {
+    // 根据不同的 React Element（vdom）类型，做不同的处理 --*
     next = beginWork(current, unitOfWork, renderLanes);
   }
 

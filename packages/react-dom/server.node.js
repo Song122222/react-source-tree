@@ -10,7 +10,7 @@
 
 import ReactVersion from 'shared/ReactVersion';
 export {ReactVersion as version};
-
+// 暴露出来的方法   renderToString   
 export function renderToString() {
   return require('./src/server/ReactDOMLegacyServerNode').renderToString.apply(
     this,
