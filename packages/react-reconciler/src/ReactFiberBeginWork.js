@@ -327,7 +327,7 @@ if (__DEV__) {
 React 中维护着两棵 fiber 树，一棵是正在展示的 UI 对应的那棵树，我们称为 current 树；另一棵通过更新，将要构建的树。
 那么在更新的过程中，是通过怎么样的对比过程，来决定是复用之前的节点，还是创建新的节点。
 */
-// --* 重点  关于fiber入口   --* 重点
+// --* 重点  关于fiber入口   --* 重点   diff算法的执行过程， 也就是fiber节点的替换过程
 export function reconcileChildren(
   current: Fiber | null,//current 当前树中的fiber节点，可能为空
   workInProgress: Fiber,//workInProgress 将要构建树的fiber节点

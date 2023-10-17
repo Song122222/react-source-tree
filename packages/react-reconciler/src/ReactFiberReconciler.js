@@ -677,13 +677,14 @@ if (__DEV__) {
   ): Object | Array<any> => {
     return copyWithSetImpl(obj, path, 0, value);
   };
-
-  const findHook = (fiber: Fiber, id: number) => {
-    // For now, the "id" of stateful hooks is just the stateful hook index.
-    // This may change in the future with e.g. nested hooks.
-    let currentHook = fiber.memoizedState;
+/* 
+React的Hooks是用于在函数组件中引入状态和副作用的一种机制。每个Hook都有一个对应的Hook类型，如useState、useEffect等。
+findHook函数的作用是在Fiber节点的Hook链表中找到指定类型的Hook，并返回对应的Hook。
+*/
+const findHook = (fiber: Fiber, id: number) => {
+    let currentHook = fiber.memoizedState;//管理hooks的链表结构
     while (currentHook !== null && id > 0) {
-      currentHook = currentHook.next;
+      currentHook = currentHook.next;//当前指针位置
       id--;
     }
     return currentHook;
@@ -696,6 +697,7 @@ if (__DEV__) {
     path: Array<string | number>,
     value: any,
   ) => {
+    // 当前的fiber节点   所在的位置
     const hook = findHook(fiber, id);
     if (hook !== null) {
       const newState = copyWithSet(hook.memoizedState, path, value);
