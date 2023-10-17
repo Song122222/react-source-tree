@@ -1,14 +1,13 @@
 /**
- * Copyright (c) Meta Platforms, Inc. and affiliates.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
+常用hooks源码
+个人看法
+ 所有的hooks都会执行resolveDispatcher这个方法，他返回的实例类型中又会返回一个实例对象，在通过调取实例上的方法统一的对hooks进行序列化管理
  *
  * @flow
  */
 
-import type {Dispatcher} from 'react-reconciler/src/ReactInternalTypes';
-import type {
+import  {Dispatcher} from 'react-reconciler/src/ReactInternalTypes';
+import  {
   ReactContext,
   StartTransitionOptions,
   Usable,
@@ -19,17 +18,22 @@ import ReactCurrentCache from './ReactCurrentCache';
 
 type BasicStateAction<S> = (S => S) | S;
 type Dispatch<A> = A => void;
-
+// --* hooks报错提示  hooks执行原理
 function resolveDispatcher() {
-  const dispatcher = ReactCurrentDispatcher.current;
+  /**
+   * 在执行element转fiber节点的过程中，FunctionComponent会执行 renderWithHooks()，
+   * renderWithHooks() 内部会判断 current 来决定是用 mount，还是update，//是否追中副作用函数
+   * 共用变量 ReactCurrentDispatcher 的位置： packages/react/src/ReactSharedInternals.js
+   */                
+  const dispatcher = ReactCurrentDispatcher.current;//在ReactCurrentDispatcher取出数据，赋值给dispatcher
   if (__DEV__) {
     if (dispatcher === null) {
+ 
       console.error(
-        'Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for' +
-          ' one of the following reasons:\n' +
-          '1. You might have mismatching versions of React and the renderer (such as React DOM)\n' +
-          '2. You might be breaking the Rules of Hooks\n' +
-          '3. You might have more than one copy of React in the same app\n' +
+        '无效的钩子调用。钩子只能在函数组件的主体内调用。这可能是由于以下原因之一' +
+          '1. 您可能有不匹配的React版本和渲染器(例如React DOM)\n' +
+          '2. 你可能违反了Hooks的规则\n' +
+          '3. 您可能在同一个应用程序中有多个React副本\n' +
           'See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem.',
       );
     }
@@ -37,7 +41,7 @@ function resolveDispatcher() {
   // Will result in a null access error if accessed outside render phase. We
   // intentionally don't throw our own error because this is in a hot path.
   // Also helps ensure this is inlined.
-  return ((dispatcher: any): Dispatcher);
+  return dispatcher
 }
 
 export function getCacheSignal(): AbortSignal {

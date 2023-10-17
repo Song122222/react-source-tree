@@ -1,33 +1,34 @@
 /**
- * Copyright (c) Meta Platforms, Inc. and affiliates.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- *
- * @flow
+memoizedState 详细解释   hook链表挂载到fiber链表上的参数
+HooksDispatcherOnUpdateInDEV和HooksDispatcherOnMount这两个参数的区别
+HooksDispatcherOnMount：这里面所有的 hooks 都是用来进行初始化的，即一边执行，一边将这些 hooks 添加到单向链表中；
+HooksDispatcherOnUpdate：顺着刚才的单向链表按顺序来执行；
+ mountWorkInProgressHook() 在所有的hooks函数的私有函数中，都会调用这个方法来获取到一个hooks节点   
  */
 
-import type {
+import  {
   ReactContext,
   StartTransitionOptions,
   Usable,
   Thenable,
   RejectedThenable,
-} from 'shared/ReactTypes';
-import type {
+} from '../../shared/ReactTypes';
+import  {
   Fiber,
   FiberRoot,
   Dispatcher,
   HookType,
   MemoCache,
 } from './ReactInternalTypes';
-import type {Lanes, Lane} from './ReactFiberLane';
-import type {HookFlags} from './ReactHookEffectTags';
-import type {Flags} from './ReactFiberFlags';
-import type {TransitionStatus} from './ReactFiberConfig';
-
+import  {Lanes, Lane} from './ReactFiberLane';
+import  {HookFlags} from './ReactHookEffectTags';
+import  {Flags} from './ReactFiberFlags';
+import  {TransitionStatus} from './ReactFiberConfig';
+import  {ThenableState} from './ReactFiberThenable';
+import  {BatchConfigTransition} from './ReactFiberTracingMarkerComponent';
+// 上方都是类型
 import {NotPendingTransition as NoPendingHostTransition} from './ReactFiberConfig';
-import ReactSharedInternals from 'shared/ReactSharedInternals';
+import ReactSharedInternals from '../../shared/ReactTypes';
 import {
   enableDebugTracing,
   enableSchedulingProfiler,
@@ -41,7 +42,7 @@ import {
   debugRenderPhaseSideEffectsForStrictMode,
   enableAsyncActions,
   enableFormActions,
-} from 'shared/ReactFeatureFlags';
+} from '../../shared/ReactFeatureFlags';
 import {
   REACT_CONTEXT_TYPE,
   REACT_SERVER_CONTEXT_TYPE,
@@ -138,8 +139,7 @@ import {
   checkIfUseWrappedInTryCatch,
   createThenableState,
 } from './ReactFiberThenable';
-import type {ThenableState} from './ReactFiberThenable';
-import type {BatchConfigTransition} from './ReactFiberTracingMarkerComponent';
+
 import {
   requestAsyncActionContext,
   requestSyncActionContext,
@@ -491,22 +491,23 @@ function areHookInputsEqual(
   }
   return true;
 }
-
-export function renderWithHooks<Props, SecondArg>(
-  current: Fiber | null,
-  workInProgress: Fiber,
-  Component: (p: Props, arg: SecondArg) => any,
-  props: Props,
-  secondArg: SecondArg,
-  nextRenderLanes: Lanes,
-): any {
+// --* hooks执行原理 
+export function renderWithHooks(
+  current,
+  workInProgress,
+  Component,
+  props,
+  secondArg,
+  nextRenderLanes,
+) {
   renderLanes = nextRenderLanes;
-  currentlyRenderingFiber = workInProgress;
+  currentlyRenderingFiber = workInProgress;// 将当前函数组件对应的fiber节点给到 currentlyRenderingFiber 变量
+
 
   if (__DEV__) {
     hookTypesDev =
       current !== null
-        ? ((current._debugHookTypes: any): Array<HookType>)
+        ? ((current._debugHookTypes))
         : null;
     hookTypesUpdateIndexDev = -1;
     // Used for hot reloading:
@@ -527,15 +528,19 @@ export function renderWithHooks<Props, SecondArg>(
   // thenableIndexCounter = 0;
   // thenableState = null;
 
-  // TODO Warn if no hooks are used at all during mount, then some are used during update.
-  // Currently we will identify the update render as a mount because memoizedState === null.
-  // This is tricky because it's valid for certain types of components (e.g. React.lazy)
+  // TODO 如果挂载过程中没有使用Hooks，那么在更新过程中会使用一些Hooks。
+  // 目前，我们将更新渲染标识为一个挂载，因为memoizedState === null.
+  // 这很棘手，因为它对某些类型的组件(例如React.lazy)有效。
 
-  // Using memoizedState to differentiate between mount/update only works if at least one stateful hook is used.
-  // Non-stateful hooks (e.g. context) don't get added to memoizedState,
-  // so memoizedState would be null during updates and mounts.
+  // 使用memoizedState来区分mount/update只有在使用了至少一个有状态钩子的情况下才有效。
+  // 无状态Hooks(例如上下文)不会被添加到memoizedState，
+  // 因此，在更新和挂载期间， memoizedState 将为空。    
   if (__DEV__) {
     if (current !== null && current.memoizedState !== null) {
+  // 根据是否是初始化挂载，来决定是初始化hook，还是更新hook
+  // 将初始化或更新hook的方法给到 ReactCurrentDispatcher.current 上，
+  // 稍后函数组件拿到的hooks，都是从 ReactCurrentDispatcher.current 中拿到的
+  // 共用变量 ReactCurrentDispatcher 的位置： packages/react/src/ReactSharedInternals.js
       ReactCurrentDispatcher.current = HooksDispatcherOnUpdateInDEV;
     } else if (hookTypesDev !== null) {
       // This dispatcher handles an edge case where a component is updating,
@@ -554,38 +559,30 @@ export function renderWithHooks<Props, SecondArg>(
         : HooksDispatcherOnUpdate;
   }
 
-  // In Strict Mode, during development, user functions are double invoked to
-  // help detect side effects. The logic for how this is implemented for in
-  // hook components is a bit complex so let's break it down.
-  //
-  // We will invoke the entire component function twice. However, during the
-  // second invocation of the component, the hook state from the first
-  // invocation will be reused. That means things like `useMemo` functions won't
-  // run again, because the deps will match and the memoized result will
-  // be reused.
-  //
-  // We want memoized functions to run twice, too, so account for this, user
-  // functions are double invoked during the *first* invocation of the component
-  // function, and are *not* double invoked during the second incovation:
-  //
-  // - First execution of component function: user functions are double invoked
-  // - Second execution of component function (in Strict Mode, during
-  //   development): user functions are not double invoked.
-  //
-  // This is intentional for a few reasons; most importantly, it's because of
-  // how `use` works when something suspends: it reuses the promise that was
-  // passed during the first attempt. This is itself a form of memoization.
-  // We need to be able to memoize the reactive inputs to the `use` call using
-  // a hook (i.e. `useMemo`), which means, the reactive inputs to `use` must
-  // come from the same component invocation as the output.
-  //
-  // There are plenty of tests to ensure this behavior is correct.
+        /*
+       在严格模式下，在开发过程中，对用户函数进行双重调用
+       帮助检测副作用。这是如何实现的逻辑
+       钩子组件有点复杂，让我们来分解一下。
+       我们将调用整个组件函数两次。然而，在组件的第二次调用，钩子的状态来自第一次调用将被重用。这意味着像“useMemo”功能不会再次运行，因为deps将匹配，记忆的结果也将匹配被重用。
+       我们也想让记忆函数运行两次，所以考虑到这个，user在组件的*第一次*调用期间，函数是双重调用的函数，并且在第二次调用时*不是*双重调用:
+       —组件函数的第一次执行:用户函数被两次调用-组件函数的第二次执行(在严格模式下，期间开发):用户函数不会被双重调用。
+       这是有意为之，原因有几个;最重要的是，这是因为当某物暂停时，“使用”是如何工作的:它重用了原来的承诺第一次就通过了。这本身就是一种记忆。
+       我们需要能够记忆“使用”调用的响应输入钩子(即' useMemo ')，这意味着，响应输入到' use '必须来自与输出相同的组件调用。有大量的测试来确保这种行为是正确的。
+*/
   const shouldDoubleRenderDEV =
     __DEV__ &&
     debugRenderPhaseSideEffectsForStrictMode &&
     (workInProgress.mode & StrictLegacyMode) !== NoMode;
 
   shouldDoubleInvokeUserFnsInHooksDEV = shouldDoubleRenderDEV;
+  /* 
+  我们知道 React 中维护着两棵树，若 current 节点或 current.memoizedState 为空，
+  说明现在没有这个 fiber 节点，或者该节点之前没有对应的 hooks，那么我们就调用 mount 方式来初始 hooks，否则就调用 update 方式来更新 hooks。
+  mount 阶段的 hooks 仅仅是用来进行 hooks 节点的生成，然后形成链表挂载在函数的 fiber 节点上。
+  update 阶段，则相对来说稍微复杂一些，可能会有触发函数二次执行渲染的可能。
+  我们在函数组件中使用的 useState(), useEffect()等，仅仅是先挂了一个名字，具体比如是执行 mountState()，还是 updateState()？
+  是在 renderWithHooks()的函数逻辑里，到执行Component()之前，才会判断的
+  */
   let children = Component(props, secondArg);
   shouldDoubleInvokeUserFnsInHooksDEV = false;
 
@@ -943,52 +940,87 @@ export function resetHooksOnUnwind(workInProgress: Fiber): void {
   thenableIndexCounter = 0;
   thenableState = null;
 }
-
+// hook节点的创建
 function mountWorkInProgressHook(): Hook {
+  /* 
+  /? 关于hooks的执行与set操作的挂载
+  只有真正的 hook 才会放到链表上，而某个 hook 的具体操作，如多次执行 setState()，则会放到 hook.queue 的属性上。
+  */
+  // 创建了一个hooks节点   --* 挂载阶段
   const hook: Hook = {
     memoizedState: null,
-
     baseState: null,
     baseQueue: null,
-    queue: null,
-
-    next: null,
+    queue: null,//执行的set操作
+    next: null,//下一个hook节点
   };
 
   if (workInProgressHook === null) {
     // This is the first hook in the list
+    // 若这是链表的第一个hook节点，则使用 currentlyRenderingFiber.memoizedState 指针指向到该hook
+    // currentlyRenderingFiber 是在 renderWithHooks() 中赋值的，是当前函数组件对应的fiber节点
     currentlyRenderingFiber.memoizedState = workInProgressHook = hook;
+   /* --* currentlyRenderingFiber得到了当前的hooks节点   在renderWithHooks中进行关系绑定，hooks节点挂载到fiber节点中的memoizedState上
+   即一个函数组件所有的 hooks 节点会形成链表，并存放在currentlyRenderingFiber.memoizedState上，下次使用时，可以从该属性中获取链表的头指针。
+   */
   } else {
-    // Append to the end of the list
+    // 若这不是链表的第一个节点，则放到列表的最后即可
     workInProgressHook = workInProgressHook.next = hook;
   }
+    // 返回这个hook节点
   return workInProgressHook;
 }
 
-function updateWorkInProgressHook(): Hook {
-  // This function is used both for updates and for re-renders triggered by a
-  // render phase update. It assumes there is either a current hook we can
-  // clone, or a work-in-progress hook from a previous render pass that we can
-  // use as a base.
+// updateWorkInProgressHook 函数功能？
+/* 
+就是从 hooks 的链表中获取到当前位置，上次渲染后和本次将要渲染的两个 hook 节点：
+currentHook: current 树中的那个 hook；即当前正在使用的那个 hook；
+workInProgressHook: workInProgress 树中的那个 hook，即将要执行的 hook；    /? 为什么是两个hooks? 副作用监听
+*/
+function updateWorkInProgressHook(): Hook {// 更新函数  --* 更新阶段
+
   let nextCurrentHook: null | Hook;
+  /**
+   * 获取current树的下一个需要执行的hook
+   * 1. 若当前没有正在执行的hook；
+   * 2. 若当前有执行的hook，则获取其下一个hook即可；
+   */
   if (currentHook === null) {
-    const current = currentlyRenderingFiber.alternate;
+    const current = currentlyRenderingFiber.alternate;// workInProgress对应的current节点
+    
     if (current !== null) {
+      /**
+       * 若current节点不为空，则从current获取到hooks的链表
+       * 注：hooks链表存储在memoizedState属性中   
+       */
       nextCurrentHook = current.memoizedState;
     } else {
       nextCurrentHook = null;
     }
   } else {
+      /**
+     * 因为当前的 updateWorkInProgressHook() 会多次执行，当第一次执行时，就已经获取到了hooks的头指针，
+     * 这里只需要通过next指针就可以获取到下一个hook节点
+     */
     nextCurrentHook = currentHook.next;
   }
-
+  /**
+   * workInProgressHook: 当前正在执行的hook；
+   * nextWorkInProgressHook: 下一个将要执行的hook；
+   *
+   * 若 workInProgressHook 为空，则使用头指针，否则使用其next指向的hook，
+   * 不过这两种方式得到的 nextWorkInProgressHook 有可能为空
+   **/
   let nextWorkInProgressHook: null | Hook;
   if (workInProgressHook === null) {
     nextWorkInProgressHook = currentlyRenderingFiber.memoizedState;
   } else {
     nextWorkInProgressHook = workInProgressHook.next;
   }
-
+  /**
+   * 若 nextWorkInProgressHook 不为空，直接使用；
+   * 若为空，则从对应的current fiber节点的hook里，克隆一份；
+   **/
   if (nextWorkInProgressHook !== null) {
     // There's already a work-in-progress. Reuse it.
     workInProgressHook = nextWorkInProgressHook;
@@ -1726,7 +1758,7 @@ function forceStoreRerender(fiber: Fiber) {
 }
 
 function mountStateImpl<S>(initialState: (() => S) | S): Hook {
-  const hook = mountWorkInProgressHook();
+  const hook = mountWorkInProgressHook();//调用此函数来获取到一个hooks节点
   if (typeof initialState === 'function') {
     // $FlowFixMe[incompatible-use]: Flow doesn't like mixed types
     initialState = initialState();

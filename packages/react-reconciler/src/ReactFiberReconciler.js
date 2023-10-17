@@ -686,6 +686,11 @@ const findHook = (fiber: Fiber, id: number) => {
     while (currentHook !== null && id > 0) {
       currentHook = currentHook.next;//当前指针位置
       id--;
+      /*        --* hooks链表和fiber链表的关系
+      Fiber链表并不是直接嵌套了Hooks链表。而是通过memoizedState属性来引用Hooks链表。
+      Fiber链表是用于表示组件树结构、实现协调和渲染过程的链表，而Hooks链表是专门用于存储和管理Hooks的链表。
+      它们之间是通过Fiber节点的memoizedState属性建立了关联。
+      这种设计使得Fiber链表和Hooks链表能够分离管理不同的功能和逻辑，提高了代码的可读性和维护性。*/
     }
     return currentHook;
   };
