@@ -85,7 +85,9 @@ function siftDown<T: Node>(heap: Heap<T>, node: T, i: number): void {
     }
   }
 }
-
+/* 
+--* 任务优先级比较函数
+*/
 function compare(a: Node, b: Node) {
   // Compare sort index first, then task id.
   const diff = a.sortIndex - b.sortIndex;

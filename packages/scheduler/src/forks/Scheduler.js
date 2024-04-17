@@ -9,7 +9,7 @@
 
 /* eslint-disable no-var */
 
-import type {PriorityLevel} from '../SchedulerPriorities';
+import type { PriorityLevel } from '../SchedulerPriorities';
 
 import {
   enableSchedulerDebugging,
@@ -21,7 +21,7 @@ import {
   maxYieldMs,
 } from '../SchedulerFeatureFlags';
 
-import {push, pop, peek} from '../SchedulerMinHeap';
+import { push, pop, peek } from '../SchedulerMinHeap';
 
 // TODO: Use symbols?
 import {
@@ -112,14 +112,14 @@ const localSetImmediate =
 
 const isInputPending =
   typeof navigator !== 'undefined' &&
-  // $FlowFixMe[prop-missing]
-  navigator.scheduling !== undefined &&
-  // $FlowFixMe[incompatible-type]
-  navigator.scheduling.isInputPending !== undefined
+    // $FlowFixMe[prop-missing]
+    navigator.scheduling !== undefined &&
+    // $FlowFixMe[incompatible-type]
+    navigator.scheduling.isInputPending !== undefined
     ? navigator.scheduling.isInputPending.bind(navigator.scheduling)
     : null;
 
-const continuousOptions = {includeContinuous: enableIsInputPendingContinuous};
+const continuousOptions = { includeContinuous: enableIsInputPendingContinuous };
 
 function advanceTimers(currentTime: number) {
   // Check for tasks that are no longer delayed and add them to the queue.
@@ -323,7 +323,7 @@ function unstable_next<T>(eventHandler: () => T): T {
   }
 }
 
-function unstable_wrapCallback<T: (...Array<mixed>) => mixed>(callback: T): T {
+function unstable_wrapCallback<T: (...Array<mixed>) => mixed > (callback: T): T {
   var parentPriorityLevel = currentPriorityLevel;
   // $FlowFixMe[incompatible-return]
   // $FlowFixMe[missing-this-annot]
@@ -343,7 +343,7 @@ function unstable_wrapCallback<T: (...Array<mixed>) => mixed>(callback: T): T {
 function unstable_scheduleCallback(
   priorityLevel: PriorityLevel,
   callback: Callback,
-  options?: {delay: number},
+  options?: { delay: number },//delay  任务是否需要延迟
 ): Task {
   var currentTime = getCurrentTime();
 
@@ -381,14 +381,20 @@ function unstable_scheduleCallback(
 
   var expirationTime = startTime + timeout;
 
-  var newTask: Task = {
-    id: taskIdCounter++,
-    callback,
-    priorityLevel,
-    startTime,
-    expirationTime,
-    sortIndex: -1,
+  var newTask: Task = { //立即执行的任务队列
+    id: taskIdCounter++, // 标记任务id
+    callback, // 回调函数
+    priorityLevel, // 任务优先级 
+    startTime, // 任务开始时间，时间点
+    expirationTime, // 过期时间，时间点
+    sortIndex: -1, // 任务排序，取值来自过期时间，因此值越小，优先级越高
   };
+  /* 
+ --*   React中一旦来了新任务，就会先用currentTime记录当前时间(performance.now()或者Date.now())，如果任务有delay参数，那么任务开始执行时间startTime = currentTime + delay;。接下来通过startTime > currentTime如果成立，证明任务是可以延期的，那么任务进入timerQueue，否则进入taskQueue。
+
+ 把taskQueue做成最小堆的数据结构，然后执行任务的时候，取最小堆的最小任务，如果任务执行完毕，那么需要把这个任务从taskQueue中删除，并重新调整剩下的任务池，依然保证它是最小堆的数据结构。当然，往taskQueue中插入新任务的时候，也要调整taskQueue，保证新的任务池仍然是最小堆。
+
+  */
   if (enableProfiling) {
     newTask.isQueued = false;
   }
@@ -540,7 +546,7 @@ function forceFrameRate(fps: number) {
     // Using console['error'] to evade Babel and ESLint
     console['error'](
       'forceFrameRate takes a positive int between 0 and 125, ' +
-        'forcing frame rates higher than 125 fps is not supported',
+      'forcing frame rates higher than 125 fps is not supported',
     );
     return;
   }
@@ -664,8 +670,8 @@ export const unstable_Profiling: {
   startLoggingProfilingEvents(): void,
   stopLoggingProfilingEvents(): ArrayBuffer | null,
 } | null = enableProfiling
-  ? {
+    ? {
       startLoggingProfilingEvents,
       stopLoggingProfilingEvents,
     }
-  : null;
+    : null;
