@@ -1,0 +1,43 @@
+{
+  "type": "Program",
+  "body": [
+    { "type": "Let", "name": "i", "value": { "type": "Number", "value": 1 } },
+    {
+      "type": "While",
+      "test": { "type": "Binary", "op": "<=", "left": { "type": "Var", "name": "i" }, "right": { "type": "Number", "value": 20 } },
+      "body": [
+        {
+          "type": "Let",
+          "name": "out",
+          "value": { "type": "String", "value": "" }
+        },
+        {
+          "type": "If",
+          "test": { "type": "Binary", "op": "==", "left": { "type": "Binary", "op": "%", "left": { "type": "Var", "name": "i" }, "right": { "type": "Number", "value": 3 } }, "right": { "type": "Number", "value": 0 } },
+          "then": [ { "type": "Assign", "name": "out", "value": { "type": "String", "value": "Fizz" } } ]
+        },
+        {
+          "type": "If",
+          "test": { "type": "Binary", "op": "==", "left": { "type": "Binary", "op": "%", "left": { "type": "Var", "name": "i" }, "right": { "type": "Number", "value": 5 } }, "right": { "type": "Number", "value": 0 } },
+          "then": [ { "type": "Assign", "name": "out", "value": { "type": "Binary", "op": "+", "left": { "type": "Var", "name": "out" }, "right": { "type": "String", "value": "Buzz" } } } ]
+        },
+        {
+          "type": "Expr",
+          "expr": {
+            "type": "Call",
+            "callee": { "type": "Var", "name": "print" },
+            "args": [
+              {
+                "type": "Binary",
+                "op": "or",
+                "left": { "type": "Var", "name": "out" },
+                "right": { "type": "Var", "name": "i" }
+              }
+            ]
+          }
+        },
+        { "type": "Assign", "name": "i", "value": { "type": "Binary", "op": "+", "left": { "type": "Var", "name": "i" }, "right": { "type": "Number", "value": 1 } } }
+      ]
+    }
+  ]
+}

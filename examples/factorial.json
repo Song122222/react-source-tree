@@ -1,0 +1,38 @@
+{
+  "type": "Program",
+  "body": [
+    {
+      "type": "Function",
+      "name": "fact",
+      "params": ["n"],
+      "body": [
+        {
+          "type": "If",
+          "test": { "type": "Binary", "op": "<=", "left": { "type": "Var", "name": "n" }, "right": { "type": "Number", "value": 1 } },
+          "then": [ { "type": "Return", "value": { "type": "Number", "value": 1 } } ]
+        },
+        {
+          "type": "Return",
+          "value": {
+            "type": "Binary",
+            "op": "*",
+            "left": { "type": "Var", "name": "n" },
+            "right": {
+              "type": "Call",
+              "callee": { "type": "Var", "name": "fact" },
+              "args": [ { "type": "Binary", "op": "-", "left": { "type": "Var", "name": "n" }, "right": { "type": "Number", "value": 1 } } ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "Expr",
+      "expr": {
+        "type": "Call",
+        "callee": { "type": "Var", "name": "print" },
+        "args": [ { "type": "Call", "callee": { "type": "Var", "name": "fact" }, "args": [ { "type": "Number", "value": 5 } ] } ]
+      }
+    }
+  ]
+}
