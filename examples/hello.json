@@ -1,0 +1,13 @@
+{
+  "type": "Program",
+  "body": [
+    {
+      "type": "Expr",
+      "expr": {
+        "type": "Call",
+        "callee": { "type": "Var", "name": "print" },
+        "args": [ { "type": "String", "value": "Hello, JSONLang!" } ]
+      }
+    }
+  ]
+}

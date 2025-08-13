@@ -1,0 +1,42 @@
+{
+  "type": "Program",
+  "body": [
+    {
+      "type": "Function",
+      "name": "fib",
+      "params": ["n"],
+      "body": [
+        {
+          "type": "If",
+          "test": { "type": "Binary", "op": "<=", "left": { "type": "Var", "name": "n" }, "right": { "type": "Number", "value": 1 } },
+          "then": [ { "type": "Return", "value": { "type": "Var", "name": "n" } } ]
+        },
+        {
+          "type": "Return",
+          "value": {
+            "type": "Binary",
+            "op": "+",
+            "left": { "type": "Call", "callee": { "type": "Var", "name": "fib" }, "args": [ { "type": "Binary", "op": "-", "left": { "type": "Var", "name": "n" }, "right": { "type": "Number", "value": 1 } } ] },
+            "right": { "type": "Call", "callee": { "type": "Var", "name": "fib" }, "args": [ { "type": "Binary", "op": "-", "left": { "type": "Var", "name": "n" }, "right": { "type": "Number", "value": 2 } } ] }
+          }
+        }
+      ]
+    },
+    { "type": "Let", "name": "i", "value": { "type": "Number", "value": 0 } },
+    {
+      "type": "While",
+      "test": { "type": "Binary", "op": "<", "left": { "type": "Var", "name": "i" }, "right": { "type": "Number", "value": 10 } },
+      "body": [
+        {
+          "type": "Expr",
+          "expr": {
+            "type": "Call",
+            "callee": { "type": "Var", "name": "print" },
+            "args": [ { "type": "Call", "callee": { "type": "Var", "name": "fib" }, "args": [ { "type": "Var", "name": "i" } ] } ]
+          }
+        },
+        { "type": "Assign", "name": "i", "value": { "type": "Binary", "op": "+", "left": { "type": "Var", "name": "i" }, "right": { "type": "Number", "value": 1 } } }
+      ]
+    }
+  ]
+}

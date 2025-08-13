@@ -1,53 +1,77 @@
-react18源码注释
-<!--   全局搜索查询  --* || 重点  可以搜索到对应的注释内容 -->
-<!--  全局搜索查询   疑问   关于为什么这么写的一些自己的看法     -->
-<!--   全局搜索查询    /. 一些重要的函数   -->
-<!-- /?  提出的一些问题 -->
+# JSONLang
 
+A tiny programming language expressed entirely as JSON. This repository includes a Python interpreter, CLI, examples, and tests.
 
+## Quick start
 
+- Run an example:
 
+```bash
+python3 /workspace/cli.py /workspace/examples/hello.json
+```
 
+- Run tests:
 
-<!-- 关于服务器端渲染 -->
-<!-- 
-SSR 是 Server Side Rendering，服务端渲染，服务端返回渲染出的 html，浏览器解析 html 来构建页面。
-其实这是一项很古老的技术，很早之前服务端就是通过 JSP、PHP 等模版引擎，渲染填充数据的模版，产生 html 返回的。只不过这时候没有组件的概念。
-有了组件之后再做服务端渲染就不一样了，你需要基于这些组件来填充数据，渲染出 html 返回。
-并且在浏览器渲染出 html 后，还要把它关联到对应的组件上，添加交互逻辑和管理之后的渲染。
-这时候的 SSR 服务只能是 Node.js 了，因为要服务端也要执行 JS 逻辑，也就是渲染组件。
-可以看到，同样的组件在服务端渲染了一次，在客户端渲染了一次，这种可以在双端渲染的方式，叫做同构渲染。
- -->
- <!-- 服务端渲染原理
- 
- 服务端渲染组件为 string，拼接成 html 返回，浏览器渲染出返回的 html，然后执行 hydrate，把渲染和已有的 html 标签关联。
-  -->
+```bash
+python3 -m unittest discover -s /workspace/tests -p "test_*.py"
+```
 
+## Program shape
 
-<!-- 关于fiber链表和hooks链表 全局搜索  详细解释   hook链表挂载到fiber链表上的参数 -->
+A program is a JSON object with `type: "Program"` and `body` as a list of statements.
 
+### Expressions
 
+- Literals: `Number`, `String`, `Boolean`, `Null`
+- Variables: `Var`
+- Arithmetic/logic: `Unary` with `op` in `-`, `!`; `Binary` with `op` in `+`, `-`, `*`, `/`, `%`, `==`, `!=`, `<`, `<=`, `>`, `>=`, `and`, `or`
+- Collections: `Array`, `Object`, `Index`, `Member`
+- Functions: `Function` (anonymous expression), `Call`
 
-<!-- 可思考的问题？ 全局搜索 /? 关于hooks的执行与set操作的挂载
-React 会把 1 个 useState(), 2 个 useEffect()，一共三个 hooks，按照顺序形成 hooks 链表。
-一个函数组件里有多个 hooks，而像 useState()这种 hook，又会多次执行诸如 setState()的操作，那这些操作放在哪里呢？是新形成了一个 hook 节点吗？还是怎样？
-  -->
+### Statements
 
+- `Let` declare a variable: `{ "type": "Let", "name": "x", "value": expr }`
+- `Assign` update a variable by name or target: `{ "type": "Assign", "name": "x", "value": expr }`
+- `SetIndex`/`SetMember` mutate arrays/objects
+- `If` with `then` and optional `else`
+- `While`, `Break`, `Continue`
+- `Function` declaration with `name`, `params`, `body`
+- `Return`
+- `Expr` to evaluate an expression for side effects
 
-  <!--  问题？
-    hook 为什么只能在函数组件顶层进行声明
-    这些 hooks 的调用顺序，就是他们挂载在链表上的顺序。在二次渲染时，也会按照挂载的顺序来执行，那么再次执行 hook 的顺序就是第一次挂载节点的顺序是一样的。
-    这就正好说明了一个问题：hook 为什么只能在函数组件顶层进行声明。
-    因为每个 hook 都是按照顺序，依次从链表中获取的。React 本身是不知道你函数组件内部逻辑的，
-    假如放到了 if 判断、循环、或者函数中，每次的渲染，都可能会因为不同的执行逻辑，导致某些 hook 不执行，进而导致 hook 的错乱。 
-    -->
+### Builtins
 
+- `print(...values)`
+- `len(value)` for list/dict/string
+- `range(n)` returns `[0..n)`
+- `push(list, value)`, `pop(list)`
+- `str(value)`
 
+## Example
 
+```json
+{
+  "type": "Program",
+  "body": [
+    {"type": "Let", "name": "i", "value": {"type": "Number", "value": 0}},
+    {
+      "type": "While",
+      "test": {"type": "Binary", "op": "<", "left": {"type": "Var", "name": "i"}, "right": {"type": "Number", "value": 3}},
+      "body": [
+        {"type": "Expr", "expr": {"type": "Call", "callee": {"type": "Var", "name": "print"}, "args": [{"type": "Var", "name": "i"}]}},
+        {"type": "Assign", "name": "i", "value": {"type": "Binary", "op": "+", "left": {"type": "Var", "name": "i"}, "right": {"type": "Number", "value": 1}}}
+      ]
+    }
+  ]
+}
+```
 
+Outputs:
 
-  <!-- 可思考的问题？ 全局搜索 /? 关于节点标签名更换的问题? 
-  当我们在对react进行数据化操作的时候， 仅仅是对状态进行了操作，那么如果在数据更新的时候，我们将标签的修改会发生什么？比如状态未改变之前<div>{state}</div> 状态改变之后<p>{state}<p>
-   -->
+```
+0
+1
+2
+```
 
    

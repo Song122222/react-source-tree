@@ -1,0 +1,31 @@
+{
+  "type": "Program",
+  "body": [
+    { "type": "Let", "name": "x", "value": { "type": "Number", "value": 2 } },
+    { "type": "Let", "name": "y", "value": { "type": "Binary", "op": "+", "left": { "type": "Var", "name": "x" }, "right": { "type": "Number", "value": 3 } } },
+    {
+      "type": "Function",
+      "name": "add",
+      "params": ["a", "b"],
+      "body": [ { "type": "Return", "value": { "type": "Binary", "op": "+", "left": { "type": "Var", "name": "a" }, "right": { "type": "Var", "name": "b" } } } ]
+    },
+    { "type": "Let", "name": "arr", "value": { "type": "Array", "elements": [ { "type": "Number", "value": 1 }, { "type": "Number", "value": 2 } ] } },
+    { "type": "Expr", "expr": { "type": "Call", "callee": { "type": "Var", "name": "push" }, "args": [ { "type": "Var", "name": "arr" }, { "type": "Number", "value": 3 } ] } },
+    { "type": "Let", "name": "obj", "value": { "type": "Object", "properties": { "greeting": { "type": "String", "value": "Hi" } } } },
+    {
+      "type": "Expr",
+      "expr": {
+        "type": "Call",
+        "callee": { "type": "Var", "name": "print" },
+        "args": [
+          { "type": "String", "value": "sum:" },
+          { "type": "Call", "callee": { "type": "Var", "name": "add" }, "args": [ { "type": "Var", "name": "x" }, { "type": "Var", "name": "y" } ] },
+          { "type": "String", "value": ", arr:" },
+          { "type": "Var", "name": "arr" },
+          { "type": "String", "value": ", obj.greeting:" },
+          { "type": "Member", "object": { "type": "Var", "name": "obj" }, "property": "greeting" }
+        ]
+      }
+    }
+  ]
+}
